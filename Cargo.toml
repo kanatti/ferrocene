@@ -1,2 +1,9 @@
 [workspace]
 members = ["crates/*"]
+
+
+[workspace.dependencies]
+store = { path = "./crates/store", version = "0.1.0" }
+codecs = { path = "./crates/codecs", version = "0.1.0" }
+analysis = { path = "./crates/analysis", version = "0.1.0" }
+ferrocene = { path = "./crates/ferrocene", version = "0.1.0" }
