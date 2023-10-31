@@ -1,5 +1,5 @@
-use analysis::{Analyzer, StandardAnalyzer};
-use codecs::{Codec, SimpleTextCodec};
+use crate::analysis::{Analyzer, StandardAnalyzer};
+use crate::codec::{Codec, SimpleTextCodec};
 
 use crate::document::Document;
 
@@ -16,7 +16,7 @@ where
     pub fn with_analyzer(analyzer: A) -> IndexWriterConfig<A, SimpleTextCodec> {
         IndexWriterConfig {
             analyzer: analyzer,
-            codec: SimpleTextCodec {},
+            codec: SimpleTextCodec::new(),
         }
     }
 }
@@ -39,7 +39,7 @@ impl IndexWriterConfig<StandardAnalyzer, SimpleTextCodec> {
     pub fn with_defaults() -> IndexWriterConfig<StandardAnalyzer, SimpleTextCodec> {
         IndexWriterConfig {
             analyzer: StandardAnalyzer {},
-            codec: SimpleTextCodec {},
+            codec: SimpleTextCodec::new(),
         }
     }
 }
