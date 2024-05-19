@@ -5,11 +5,13 @@
 </p>
 
 
-Ferrocene is a rust port of lucene search library.
+Ferrocene is a rust port of lucene search library.(For learning purposes only.)
 
 ## Quick Start
 
 ```rust
 cargo build
 cargo test
+
+cargo run --example api
 ```
