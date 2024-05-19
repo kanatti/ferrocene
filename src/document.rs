@@ -1,15 +1,5 @@
-use crate::field::Field;
+pub mod document;
+pub mod field;
 
-pub struct Document {
-    fields: Vec<Field>,
-}
-
-impl Document {
-    pub fn new() -> Self {
-        Document { fields: Vec::new() }
-    }
-
-    pub fn add(&mut self, field: Field) {
-        self.fields.push(field);
-    }
-}
+pub use document::Document;
+pub use field::Field;

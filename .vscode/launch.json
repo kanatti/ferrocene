@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "name": "Cargo Test",
+            "request": "launch",
+            "cargo": {
+                "args": ["test", "--no-run", "--lib"]
+            }
+        },
+        {
+            "name": "Launch API Example",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/examples/api"
+        }
+    ]
+}
