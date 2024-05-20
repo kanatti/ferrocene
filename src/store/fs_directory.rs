@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use std::{
     fs::{self, DirEntry, File},
+    io::{BufReader, BufWriter, Seek, Write},
     path::PathBuf,
     time::SystemTime,
 };
@@ -93,7 +94,7 @@ impl Directory for FSDirectory {
 }
 
 pub struct FSInputStream {
-
+    reader: BufReader<File>,
 }
 
 impl InputStream for FSInputStream {
@@ -122,39 +123,42 @@ impl InputStream for FSInputStream {
     }
 }
 
-pub struct  FSOutputStream {}
+pub struct FSOutputStream {
+    writer: BufWriter<File>,
+}
 
+// TODO: Improve error handling
 impl OutputStream for FSOutputStream {
-    fn write_long(&mut self, value: u32) {
-        todo!()
+    fn write_byte(&mut self, value: u8) {
+        self.writer.write_all(&[value]).unwrap();
     }
 
-    fn get_pointer(&self) -> u32 {
-        todo!()
+    fn seek(&mut self, position: u64) {
+        self.writer.seek(std::io::SeekFrom::Start(position)).unwrap();
     }
-    
-    fn write_vint(&mut self, value: u64) {
-        todo!()
+
+    fn stream_position(&mut self) -> u64 {
+        self.writer.stream_position().unwrap()
     }
-    
-    fn write_byte(&mut self, value: u8) {
-        todo!()
-    }
-    
-    fn write_string(&mut self, value: &str) {
-        todo!()
+
+    fn flush(&mut self) {
+        self.writer.flush().unwrap();
     }
 }
 
 impl Into<FSInputStream> for File {
     fn into(self) -> FSInputStream {
-        FSInputStream {}
+        FSInputStream {
+            reader: BufReader::new(self),
+        }
     }
 }
 
 impl Into<FSOutputStream> for File {
     fn into(self) -> FSOutputStream {
-        FSOutputStream {}
+        FSOutputStream {
+            writer: BufWriter::new(self),
+        }
     }
 }
 

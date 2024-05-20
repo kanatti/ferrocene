@@ -36,5 +36,12 @@ impl <A: Analyzer, D: Directory> DocumentWriter<A, D> {
 
         // Write field values
 
+        // Invert doc into postingTable
+
+        // Sort postingTable into an array for postings
+
+        // Write postings
+
+        // Write norms of indexed fields
     }
 }

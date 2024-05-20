@@ -38,11 +38,11 @@ where
     pub fn add_document(&mut self, doc: &Document) {
         // 1. Get current file-pointer from fields_stream and write as long to index_stream
         self.index_stream
-            .write_long(self.fields_stream.get_pointer());
+            .write_long(self.fields_stream.stream_position());
 
         // 2. Find count of stored fields and write to fields_stream as vInt
         let stored_count = doc.fields.iter().filter(|f| f.is_stored).count();
-        self.fields_stream.write_vint(stored_count as u64);
+        self.fields_stream.write_vint(stored_count as u32);
 
         // 3. For each stored field, write field number, is_tokenized flag and field value.
         doc.fields.iter().for_each(|f| {
@@ -50,7 +50,7 @@ where
                 let field_number = self.field_infos.get_field_number(&f.name).unwrap();
                 let is_tokenized = f.is_analyzed as u8;
 
-                self.fields_stream.write_vint(field_number as u64);
+                self.fields_stream.write_vint(field_number as u32);
                 self.fields_stream.write_byte(is_tokenized);
                 self.fields_stream.write_string(&f.value);
             }
