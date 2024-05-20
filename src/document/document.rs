@@ -3,7 +3,7 @@ use super::Field;
 /// A document is a collection of fields.
 /// Its the unit of indexing and search.
 pub struct Document {
-    fields: Vec<Field>,
+    pub fields: Vec<Field>,
 }
 
 impl Document {
