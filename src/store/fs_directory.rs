@@ -5,7 +5,7 @@ use std::{
     time::SystemTime,
 };
 
-use super::{Directory, DirectoryError};
+use super::{Directory, DirectoryError, InputStream, OutputStream};
 
 pub struct FSDirectory {
     pub path: PathBuf,
@@ -37,6 +37,9 @@ impl FSDirectory {
 }
 
 impl Directory for FSDirectory {
+    type Input = FSInputStream;
+    type Output = FSOutputStream;
+
     fn list(&self) -> Result<Vec<String>, DirectoryError> {
         let file_names: Vec<String> = self
             .entries()?
@@ -74,18 +77,84 @@ impl Directory for FSDirectory {
         Ok(fs::rename(old, new)?)
     }
 
-    fn create_file(&self, name: &str) -> Result<File, DirectoryError> {
+    fn create_file(&self, name: &str) -> Result<Self::Output, DirectoryError> {
         let path = self.path.join(name);
-        Ok(fs::File::create_new(path)?)
+        Ok(fs::File::create_new(path)?.into())
     }
 
-    fn open_file(&self, name: &str) -> Result<File, DirectoryError> {
+    fn open_file(&self, name: &str) -> Result<Self::Input, DirectoryError> {
         let path = self.path.join(name);
-        Ok(fs::File::open(path)?)
+        Ok(fs::File::open(path)?.into())
     }
 
     fn close(&self) -> Result<(), DirectoryError> {
         Ok(())
+    }
+}
+
+pub struct FSInputStream {
+
+}
+
+impl InputStream for FSInputStream {
+    fn read_byte(&mut self) -> u8 {
+        todo!()
+    }
+
+    fn read_next(&mut self) -> char {
+        todo!()
+    }
+
+    fn unread_next(&mut self) {
+        todo!()
+    }
+
+    fn get_next_char(&mut self) -> char {
+        todo!()
+    }
+
+    fn get_next_token(&mut self) -> String {
+        todo!()
+    }
+
+    fn get_next_int(&mut self) -> i32 {
+        todo!()
+    }
+}
+
+pub struct  FSOutputStream {}
+
+impl OutputStream for FSOutputStream {
+    fn write_long(&mut self, value: u32) {
+        todo!()
+    }
+
+    fn get_pointer(&self) -> u32 {
+        todo!()
+    }
+    
+    fn write_vint(&mut self, value: u64) {
+        todo!()
+    }
+    
+    fn write_byte(&mut self, value: u8) {
+        todo!()
+    }
+    
+    fn write_string(&mut self, value: &str) {
+        todo!()
+    }
+}
+
+impl Into<FSInputStream> for File {
+    fn into(self) -> FSInputStream {
+        FSInputStream {}
+    }
+}
+
+impl Into<FSOutputStream> for File {
+    fn into(self) -> FSOutputStream {
+        FSOutputStream {}
     }
 }
 

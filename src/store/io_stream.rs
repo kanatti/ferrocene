@@ -1,5 +1,3 @@
-pub const BUFFER_SIZE: usize = 1024;
-
 pub trait InputStream {
     fn read_byte(&mut self) -> u8;
     fn read_next(&mut self) -> char;
@@ -10,5 +8,14 @@ pub trait InputStream {
 }
 
 pub trait OutputStream {
+    fn write_long(&mut self, value: u32);
 
+    fn write_vint(&mut self, value: u64);
+
+    fn write_byte(&mut self, value: u8);
+
+    fn write_string(&mut self, value: &str);
+
+    fn get_pointer(&self) -> u32;
 }
+

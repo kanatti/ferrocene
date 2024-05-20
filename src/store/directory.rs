@@ -1,11 +1,16 @@
-use std::{fs::File, io, time::SystemTime};
+use std::{io, time::SystemTime};
 
 use thiserror::Error;
+
+use super::{InputStream, OutputStream};
 
 /// Directory provides an abstraction layer for storing a list of files.
 /// A directory contains only flat list of files, no sub-folder hierarchy.
 /// A file can be created once, after which it can be only open for reading or deleting.
 pub trait Directory {
+    type Output: OutputStream;
+    type Input: InputStream;
+
     /// Returns a list of files in the directory.
     fn list(&self) -> Result<Vec<String>, DirectoryError>;
 
@@ -25,10 +30,10 @@ pub trait Directory {
     fn rename_file(&self, from: &str, to: &str) -> Result<(), DirectoryError>;
 
     /// Creates an empty file to write.
-    fn create_file(&self, name: &str) -> Result<File, DirectoryError>;
+    fn create_file(&self, name: &str) -> Result<Self::Output, DirectoryError>;
 
     /// Open a file for reading.
-    fn open_file(&self, name: &str) -> Result<File, DirectoryError>;
+    fn open_file(&self, name: &str) -> Result<Self::Input, DirectoryError>;
 
     // Close the store
     fn close(&self) -> Result<(), DirectoryError>;
