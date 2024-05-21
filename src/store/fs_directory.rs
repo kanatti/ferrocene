@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use std::{
     fs::{self, DirEntry, File},
-    io::{BufReader, BufWriter, Seek, Write},
+    io::{BufReader, BufWriter, Read, Seek, Write},
     path::PathBuf,
     time::SystemTime,
 };
@@ -98,28 +98,8 @@ pub struct FSInputStream {
 }
 
 impl InputStream for FSInputStream {
-    fn read_byte(&mut self) -> u8 {
-        todo!()
-    }
-
-    fn read_next(&mut self) -> char {
-        todo!()
-    }
-
-    fn unread_next(&mut self) {
-        todo!()
-    }
-
-    fn get_next_char(&mut self) -> char {
-        todo!()
-    }
-
-    fn get_next_token(&mut self) -> String {
-        todo!()
-    }
-
-    fn get_next_int(&mut self) -> i32 {
-        todo!()
+    fn read_exact(&mut self, buf: &mut [u8]) {
+        self.reader.read_exact(buf).unwrap();
     }
 }
 
