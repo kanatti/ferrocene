@@ -1,6 +1,9 @@
 use std::{collections::HashMap, rc::Rc};
 
-use crate::{document::{Document, Field}, store::Directory};
+use crate::{
+    document::{Document, Field},
+    store::{Directory, InputStream, OutputStream},
+};
 
 pub struct FieldInfo {
     pub name: String,
@@ -9,8 +12,8 @@ pub struct FieldInfo {
 }
 
 /// Stores all the field infos.
-/// 
-/// 
+///
+///
 /// ```md
 ///   by_name                                                          
 /// ┌─────────────┐          ┌──────────────────┐                        
@@ -37,7 +40,7 @@ pub struct FieldInfos {
     pub by_number: Vec<Rc<FieldInfo>>,
     pub by_name: HashMap<String, Rc<FieldInfo>>,
 }
-            
+
 impl FieldInfos {
     /// Create empty FieldInfos.
     pub fn new() -> Self {
@@ -45,15 +48,6 @@ impl FieldInfos {
             by_number: vec![],
             by_name: HashMap::new(),
         }
-    }
-
-    /// Load FieldInfos from existing file.
-    pub fn load(_dir: impl Directory, _filename: &str) {
-        todo!()
-    }
-
-    pub fn flush(_dir: impl Directory, _filename: &str) {
-        todo!()
     }
 
     pub fn add_doc(&mut self, doc: &Document) {
@@ -87,7 +81,9 @@ impl FieldInfos {
     }
 
     pub fn get_field_name(&self, number: u32) -> Option<String> {
-        self.by_number.get(number as usize).map(|fi| fi.name.clone())
+        self.by_number
+            .get(number as usize)
+            .map(|fi| fi.name.clone())
     }
 
     pub fn get_field_info_by_name(&self, name: &str) -> Option<Rc<FieldInfo>> {
@@ -100,5 +96,39 @@ impl FieldInfos {
 
     pub fn size(&self) -> usize {
         self.by_number.len()
+    }
+
+    pub fn read<I, O, D>(&mut self, dir: D, filename: &str)
+    where
+        I: InputStream,
+        O: OutputStream,
+        D: Directory<Input = I, Output = O>,
+    {
+        let mut input = dir.open_file(filename).unwrap();
+
+        let size = input.read_vint() as usize;
+
+        for _i in 0..size {
+            let name = input.read_string();
+            let is_indexed = input.read_bool();
+
+            self.add(name, is_indexed);
+        }
+    }
+
+    pub fn write<I, O, D>(&self, dir: &D, filename: &str)
+    where
+        I: InputStream,
+        O: OutputStream,
+        D: Directory<Input = I, Output = O>,
+    {
+        let mut output = dir.create_file(filename).unwrap();
+
+        output.write_vint(self.size() as u32);
+        
+        self.by_number.iter().for_each(|fi| {
+            output.write_string(&fi.name);
+            output.write_bool(fi.is_indexed);
+        });
     }
 }

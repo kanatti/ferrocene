@@ -12,6 +12,10 @@ pub trait InputStream {
         buf[0]
     }
 
+    fn read_bool(&mut self) -> bool {
+        self.read_byte() != 0
+    }
+
     fn read_u32(&mut self) -> u32 {
         let mut buf = [0; 4];
         self.read_exact(&mut buf);
@@ -88,6 +92,10 @@ pub trait OutputStream {
         for value in values {
             self.write_byte(*value);
         }
+    }
+
+    fn write_bool(&mut self, value: bool) {
+        self.write_byte(value as u8);
     }
 
     fn write_u32(&mut self, value: u32) {
