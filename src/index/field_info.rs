@@ -98,7 +98,7 @@ impl FieldInfos {
         self.by_number.len()
     }
 
-    pub fn read<I, O, D>(&mut self, dir: D, filename: &str)
+    pub fn read<I, O, D>(&mut self, dir: &D, filename: &str)
     where
         I: InputStream,
         O: OutputStream,
@@ -125,10 +125,70 @@ impl FieldInfos {
         let mut output = dir.create_file(filename).unwrap();
 
         output.write_vint(self.size() as u32);
-        
+
         self.by_number.iter().for_each(|fi| {
             output.write_string(&fi.name);
             output.write_bool(fi.is_indexed);
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::store::FSDirectory;
+
+    use super::*;
+
+    #[test]
+    fn test_field_infos() {
+        let mut field_infos = FieldInfos::new();
+
+        field_infos.add("user_id".to_string(), true);
+        field_infos.add("user_name".to_string(), true);
+        field_infos.add("title".to_string(), true);
+
+        assert_eq!(field_infos.get_field_number("user_id").unwrap(), 0);
+        assert_eq!(field_infos.get_field_number("user_name").unwrap(), 1);
+        assert_eq!(field_infos.get_field_number("title").unwrap(), 2);
+
+        assert_eq!(field_infos.get_field_name(0).unwrap(), "user_id");
+        assert_eq!(field_infos.get_field_name(1).unwrap(), "user_name");
+        assert_eq!(field_infos.get_field_name(2).unwrap(), "title");
+
+        let field = field_infos.get_field_info_by_name("user_id").unwrap();
+        assert_eq!(field.name, "user_id");
+        assert_eq!(field.is_indexed, true);
+        assert_eq!(field.number, 0);
+    }
+
+    #[test]
+    fn test_field_infos_io() {
+        let mut field_infos = FieldInfos::new();
+
+        field_infos.add("user_id".to_string(), true);
+        field_infos.add("user_name".to_string(), true);
+        field_infos.add("title".to_string(), true);
+
+        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
+        let path = temp_dir.path().join("test-index");
+
+        let directory = FSDirectory::new(&path).expect("Filed to create FSDirectory over temp dir");
+
+        // Write field-infos to file
+        field_infos.write(&directory, "field-infos.fnm");
+
+        // Read field-infos from file
+        let mut field_infos_read = FieldInfos::new();
+        field_infos_read.read(&directory, "field-infos.fnm");
+
+        assert_eq!(field_infos.get_field_number("user_id").unwrap(), 0);
+        assert_eq!(field_infos.get_field_number("user_name").unwrap(), 1);
+        assert_eq!(field_infos.get_field_number("title").unwrap(), 2);
+
+        assert_eq!(field_infos.get_field_name(0).unwrap(), "user_id");
+        assert_eq!(field_infos.get_field_name(1).unwrap(), "user_name");
+        assert_eq!(field_infos.get_field_name(2).unwrap(), "title");
+
+        temp_dir.close().expect("Failed to close temp dir");
     }
 }
