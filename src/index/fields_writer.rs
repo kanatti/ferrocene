@@ -12,7 +12,7 @@ where
     D: Directory<Output = O, Input = I>,
 {
     pub field_infos: &'a FieldInfos,
-    pub dir: D,
+    pub dir: &'a D,
     pub fields_stream: O,
     pub index_stream: O,
 }
@@ -23,7 +23,7 @@ where
     I: InputStream,
     D: Directory<Output = O, Input = I>,
 {
-    pub fn new(dir: D, segment_id: &str, field_infos: &'a FieldInfos) -> Self {
+    pub fn new(dir: &'a D, segment_id: &str, field_infos: &'a FieldInfos) -> Self {
         let fields_stream = dir.create_file(&format!("{}.fdt", segment_id)).unwrap();
         let index_stream = dir.create_file(&format!("{}.fdx", segment_id)).unwrap();
 
@@ -31,11 +31,11 @@ where
             field_infos,
             fields_stream,
             index_stream,
-            dir,
+            dir: &dir,
         }
     }
 
-    pub fn add_document(&mut self, doc: &Document) {
+    pub fn add_doc(&mut self, doc: &Document) {
         // 1. Get current file-pointer from fields_stream and write as long to index_stream
         self.index_stream
             .write_long(self.fields_stream.stream_position());

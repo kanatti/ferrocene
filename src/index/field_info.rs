@@ -67,6 +67,10 @@ impl FieldInfos {
     }
 
     pub fn add(&mut self, name: String, is_indexed: bool) {
+        if self.by_name.contains_key(&name) {
+            return;
+        }
+
         let field_info = Rc::new(FieldInfo {
             name: name.clone(),
             is_indexed,
