@@ -80,7 +80,11 @@ impl Directory for FSDirectory {
 
     fn create_file(&self, name: &str) -> Result<Self::Output, DirectoryError> {
         let path = self.path.join(name);
-        Ok(fs::File::create_new(path)?.into())
+        let mut open_options = fs::File::options();
+        let open_options = open_options
+            .read(true).write(true).create_new(true);
+
+        Ok(open_options.open(path)?.into())
     }
 
     fn open_file(&self, name: &str) -> Result<Self::Input, DirectoryError> {
@@ -114,7 +118,9 @@ impl OutputStream for FSOutputStream {
     }
 
     fn seek(&mut self, position: u64) {
-        self.writer.seek(std::io::SeekFrom::Start(position)).unwrap();
+        self.writer
+            .seek(std::io::SeekFrom::Start(position))
+            .unwrap();
     }
 
     fn stream_position(&mut self) -> u64 {
