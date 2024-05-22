@@ -4,3 +4,4 @@ crates/*/target
 *.log
 *.iml
 .DS_Store
+/test-data/
