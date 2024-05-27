@@ -166,6 +166,24 @@ mod tests {
     }
 
     #[test]
+    fn test_duplicate_fields() {
+        let mut field_infos = FieldInfos::new();
+
+        field_infos.add("user_id".to_string(), true);
+        field_infos.add("user_name".to_string(), true);
+        field_infos.add("user_id".to_string(), true);
+        field_infos.add("user_id".to_string(), true);
+
+        assert_eq!(field_infos.size(), 2);
+
+        assert_eq!(field_infos.get_field_number("user_id").unwrap(), 0);
+        assert_eq!(field_infos.get_field_number("user_name").unwrap(), 1);
+
+        assert_eq!(field_infos.get_field_name(0).unwrap(), "user_id");
+        assert_eq!(field_infos.get_field_name(1).unwrap(), "user_name");
+    }
+
+    #[test]
     fn test_field_infos_io() {
         let mut field_infos = FieldInfos::new();
 
