@@ -20,7 +20,7 @@ impl Term {
 }
 
 
-/// Information about a term in a field
+/// Information about a term in a doc
 pub struct Posting {
     pub term: Rc<Term>,
     pub freq: u32,
