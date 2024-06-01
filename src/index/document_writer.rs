@@ -39,6 +39,10 @@ impl PostingsTable {
         }
     }
 
+    pub fn values(&self) -> Vec<&Posting> {
+        self.table.values().collect()
+    }
+
     pub fn clear(&mut self) {
         self.table.clear();
     }
@@ -98,8 +102,11 @@ where
         self.invert_doc(&doc);
 
         // Sort postingTable into an array for postings
+        let mut postings = self.postings_table.values();
+        postings.sort_by_key(|p| &p.term);
 
         // Write postings
+        println!("{:?}", postings);
 
         // Write norms of indexed fields
     }
@@ -152,7 +159,7 @@ mod tests {
         let mut postings_table = PostingsTable::new();
 
         let term1 = Rc::new(Term::new("title".to_owned(), "Tests".to_owned()));
-        let term2 = Rc::new(Term::new("description".to_owned(), "Unit".to_owned()));
+        let term2 = Rc::new(Term::new("description".to_owned(), "unit".to_owned()));
         let term3 = Rc::new(Term::new("description".to_owned(), "tests".to_owned()));
         let term4 = Rc::new(Term::new("description".to_owned(), "and".to_owned()));
         let term5 = Rc::new(Term::new(
@@ -196,7 +203,7 @@ mod tests {
         doc.add(Field::keyword("title".to_owned(), "Tests".to_owned()));
         doc.add(Field::text(
             "description".to_owned(),
-            "Unit tests and integration tests".to_owned(),
+            "unit tests and integration tests".to_owned(),
         ));
 
         // Execute
