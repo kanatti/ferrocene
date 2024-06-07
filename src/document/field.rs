@@ -2,7 +2,7 @@
 /// - Values are analyzed into terms.
 /// - Keywords are not analyzed.
 /// - Fields maybe stored in the index to be returned with document.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Field {
     pub name: String,
     pub value: String,

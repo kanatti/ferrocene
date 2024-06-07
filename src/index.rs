@@ -5,7 +5,7 @@ pub mod index_writer;
 
 use std::rc::Rc;
 
-pub use index_writer::{IndexWriter, IndexWriterConfig};
+pub use index_writer::IndexWriter;
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Term {
@@ -98,9 +98,21 @@ mod tests {
 
         postings.sort_by_key(|p| p.term.clone());
 
-        assert_eq!(postings.get(0).unwrap().term, Term::new("a".to_string(), "a".to_string()).into());
-        assert_eq!(postings.get(1).unwrap().term, Term::new("a".to_string(), "b".to_string()).into());
-        assert_eq!(postings.get(2).unwrap().term, Term::new("a".to_string(), "c".to_string()).into());
-        assert_eq!(postings.get(3).unwrap().term, Term::new("b".to_string(), "a".to_string()).into());
+        assert_eq!(
+            postings.get(0).unwrap().term,
+            Term::new("a".to_string(), "a".to_string()).into()
+        );
+        assert_eq!(
+            postings.get(1).unwrap().term,
+            Term::new("a".to_string(), "b".to_string()).into()
+        );
+        assert_eq!(
+            postings.get(2).unwrap().term,
+            Term::new("a".to_string(), "c".to_string()).into()
+        );
+        assert_eq!(
+            postings.get(3).unwrap().term,
+            Term::new("b".to_string(), "a".to_string()).into()
+        );
     }
 }

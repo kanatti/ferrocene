@@ -146,6 +146,23 @@ where
             self.field_boosts[field_number as usize] *= field.boost;
         }
     }
+
+    fn _write_postings(&mut self, segment_id: &str, postings: &Vec<&Posting>) {
+        let mut _freq = self.directory.create_file(&format!("{}.frq", segment_id)).unwrap();
+        let mut _pos = self.directory.create_file(&format!("{}.prx", segment_id)).unwrap();
+
+        // TermInfosWriter
+        // TermInfo
+
+        // Look through postings
+        for _posting in postings {
+            // Add an entry to the dictionary with pointers to prox and freq files.
+
+            // Add an entry to the freq file.
+
+            // Write positiongs using delta-encoding.
+        }
+    }
 }
 
 #[cfg(test)]
@@ -229,5 +246,7 @@ mod tests {
         assert_eq!(postings_table.table.get(&term2).unwrap().positions.len(), 2);
         assert_eq!(postings_table.table.get(&term2).unwrap().positions[0], 1);
         assert_eq!(postings_table.table.get(&term2).unwrap().positions[1], 4);
+
+        // Verify files generated
     }
 }
