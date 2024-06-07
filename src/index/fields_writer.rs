@@ -7,9 +7,7 @@ use super::field_info::FieldInfos;
 
 /// Writes a single document into the index, in a row oriented format.
 /// Index file points to specific location of a doc in fields file.
-pub struct FieldsWriter<'a, O, I, D>
-where
-    D: Directory<Output = O, Input = I>,
+pub struct FieldsWriter<'a, O, D>
 {
     pub field_infos: &'a FieldInfos,
     pub dir: &'a D,
@@ -17,7 +15,7 @@ where
     pub index_stream: O,
 }
 
-impl<'a, O, I, D> FieldsWriter<'a, O, I, D>
+impl<'a, O, I, D> FieldsWriter<'a, O, D>
 where
     O: OutputStream,
     I: InputStream,

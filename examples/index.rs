@@ -12,7 +12,7 @@ fn main() {
     let data_path = workspace_path.join("examples").join("data");
 
     // Create a new index writer
-    let mut writer = IndexWriter::new(&index_path, StandardAnalyzer::new());
+    let mut writer = IndexWriter::create(&index_path, StandardAnalyzer::new());
 
     // index all files in data_path
     for entry in std::fs::read_dir(data_path).unwrap() {

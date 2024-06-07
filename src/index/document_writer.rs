@@ -3,17 +3,14 @@ use std::{collections::HashMap, rc::Rc};
 use crate::{
     analysis::Analyzer,
     document::Document,
-    store::{
-        fs_directory::{FSInputStream, FSOutputStream},
-        Directory, FSDirectory, InputStream, OutputStream,
-    },
+    store::{Directory, FSDirectory, InputStream, OutputStream},
 };
 
 use super::{field_info::FieldInfos, fields_writer::FieldsWriter, Posting, Term};
 
 pub const MAX_FIELD_LENGTH: usize = 1024;
 
-pub type FSDocumentWriter<A> = DocumentWriter<A, FSInputStream, FSOutputStream, FSDirectory>;
+pub type FSDocumentWriter<A> = DocumentWriter<A, FSDirectory>;
 
 pub struct PostingsTable {
     pub table: HashMap<Rc<Term>, Posting>,
@@ -48,13 +45,7 @@ impl PostingsTable {
     }
 }
 
-pub struct DocumentWriter<A, I, O, D>
-where
-    A: Analyzer,
-    I: InputStream,
-    O: OutputStream,
-    D: Directory<Input = I, Output = O>,
-{
+pub struct DocumentWriter<A, D> {
     pub analyzer: A,
     pub directory: D,
     pub max_field_length: usize,
@@ -64,7 +55,7 @@ where
     pub field_boosts: Vec<f32>,
 }
 
-impl<A, I, O, D> DocumentWriter<A, I, O, D>
+impl<A, I, O, D> DocumentWriter<A, D>
 where
     A: Analyzer,
     I: InputStream,
@@ -148,8 +139,14 @@ where
     }
 
     fn _write_postings(&mut self, segment_id: &str, postings: &Vec<&Posting>) {
-        let mut _freq = self.directory.create_file(&format!("{}.frq", segment_id)).unwrap();
-        let mut _pos = self.directory.create_file(&format!("{}.prx", segment_id)).unwrap();
+        let mut _freq = self
+            .directory
+            .create_file(&format!("{}.frq", segment_id))
+            .unwrap();
+        let mut _pos = self
+            .directory
+            .create_file(&format!("{}.prx", segment_id))
+            .unwrap();
 
         // TermInfosWriter
         // TermInfo
