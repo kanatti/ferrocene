@@ -4,6 +4,7 @@ pub mod fields_writer;
 pub mod index_writer;
 pub mod posting;
 pub mod term;
+pub mod segment_infos;
 
 pub use index_writer::IndexWriter;
 pub use posting::Posting;
