@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 pub const BUFFER_SIZE: usize = 1024;
 
 /// Interface to read from a file in `Directory`.
@@ -82,6 +84,44 @@ pub trait InputStream {
         self.read_exact(&mut buf);
         String::from_utf8(buf).unwrap()
     }
+
+    fn read_map(&mut self) -> HashMap<String, String> {
+        let count = self.read_vint() as usize;
+        let mut map = HashMap::with_capacity(count);
+
+        for _ in 0..count {
+            let key = self.read_string();
+            let value = self.read_string();
+
+            map.insert(key, value);
+        }
+
+        map
+    }
+
+    fn read_set(&mut self) -> HashSet<String> {
+        let count = self.read_vint() as usize;
+        let mut set = HashSet::with_capacity(count);
+
+        for _ in 0..count {
+            let value = self.read_string();
+            set.insert(value);
+        }
+
+        set
+    }
+
+    fn read_vec(&mut self) -> Vec<String> {
+        let count = self.read_vint() as usize;
+        let mut vec = Vec::with_capacity(count);
+
+        for _ in 0..count {
+            let value = self.read_string();
+            vec.push(value);
+        }
+
+        vec
+    }
 }
 
 /// Interface to write to a file in `Directory`.
@@ -151,4 +191,3 @@ pub trait OutputStream {
         self.write_bytes(value.as_bytes());
     }
 }
-

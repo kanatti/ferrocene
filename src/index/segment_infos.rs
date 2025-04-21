@@ -53,8 +53,8 @@ pub fn read_segment_infos<D: Directory>(
     let codec = input.read_string();
     println!("codec - {}", codec);
 
-    let version = input.read_int();
-    println!("version - {}", version);
+    let format = input.read_int();
+    println!("format - {}", format);
 
     let id = input.read_bytes(ID_LENGTH as usize);
     println!("id - {:?}", id);
@@ -73,7 +73,75 @@ pub fn read_segment_infos<D: Directory>(
     println!("lucene_version - {:?}", lucene_version);
 
     let index_created_version_major = input.read_vint();
-    println!("index_created_version_major - {}", index_created_version_major);
+    println!(
+        "index_created_version_major - {}",
+        index_created_version_major
+    );
+
+    let sis_version = input.read_long();
+    println!("sis_version - {}", sis_version);
+
+    let sis_counter = input.read_vlong();
+    println!("sis_counter - {}", sis_counter);
+
+    let num_segments = input.read_int();
+    println!("num_segments - {}", num_segments);
+
+    if num_segments > 0 {
+        let min_segment_lucene_version = (input.read_vint(), input.read_vint(), input.read_vint());
+        println!(
+            "min_segment_lucene_version - {:?}",
+            min_segment_lucene_version
+        );
+    }
+
+    // Read each segment-commit-info
+    for seg in 0..num_segments {
+        let segment_name = input.read_string();
+        println!("segment_name - {}", segment_name);
+
+        let segment_id = input.read_bytes(ID_LENGTH as usize);
+        println!("segment_id - {:?}", segment_id);
+
+        let codec = input.read_string();
+        println!("codec - {}", codec);
+
+        // TODO: Read segment-info, depends on codec
+
+        let del_gen = input.read_long();
+        println!("del_gen - {}", del_gen as i64);
+
+        let del_count = input.read_int();
+        println!("del_count - {}", del_count);
+
+        let field_infos_gen = input.read_long();
+        println!("field_infos_gen - {}", field_infos_gen as i64);
+
+        let dv_gen = input.read_long();
+        println!("dv_gen - {}", dv_gen as i64);
+
+        let soft_delete_count = input.read_int();
+        println!("soft_delete_count - {}", soft_delete_count);
+
+        let field_infos_files = input.read_set();
+        println!("field_infos_files - {:?}", field_infos_files);
+
+        let num_dv_fields = input.read_int();
+        println!("num_dv_fields - {}", num_dv_fields);
+
+        // TODO: Read dv file names if non-zero
+    }
+
+    // Read user data
+    let user_data = input.read_map();
+    println!("user_data - {:?}", user_data);
+
+    // Footer
+    let footer_magic = input.read_int();
+    println!("footer_magic - {}", footer_magic as i32);
+
+    let algorithm_id = input.read_int();
+    println!("algorithm_id - {}", algorithm_id);
 
     SegmentInfos {}
 }
