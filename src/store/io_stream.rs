@@ -12,6 +12,12 @@ pub trait InputStream {
         buf[0]
     }
 
+    fn read_bytes(&mut self, len: usize) -> Vec<u8> {
+        let mut buf = vec![0; len];
+        self.read_exact(&mut buf);
+        buf
+    }
+
     fn read_bool(&mut self) -> bool {
         self.read_byte() != 0
     }
