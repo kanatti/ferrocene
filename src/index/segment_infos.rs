@@ -1,13 +1,13 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::{
-    index::{codec_utils, segment_info},
+    index::{codec_utils, segment_commit_info::SegmentCommitInfo},
     store::{Directory, InputStream},
     version::Version,
 };
 use radix_fmt::radix_36;
 
-use super::segment_info::SegmentInfo;
+use super::segment_commit_info;
 
 /// Represents metadata about all segments in the index
 #[derive(Debug)]
@@ -30,27 +30,6 @@ pub struct SegmentInfos {
     pub id: Vec<u8>,
     /// Minimum Lucene version across all segments in the index
     pub min_segment_lucene_version: Option<Version>,
-}
-
-/// Represents metadata about a specific segment commit
-#[derive(Debug)]
-pub struct SegmentCommitInfo {
-    /// The segment info containing core segment metadata
-    pub info: SegmentInfo,
-    /// Deletion generation number for tracking deleted documents
-    pub del_gen: i64,
-    /// Number of deleted documents in this segment
-    pub del_count: u32,
-    /// Field infos generation number
-    pub field_infos_gen: i64,
-    /// Doc values generation number
-    pub dv_gen: i64,
-    /// Number of soft-deleted documents in this segment
-    pub soft_delete_count: u32,
-    /// Set of files containing field information
-    pub field_infos_files: HashSet<String>,
-    /// Map of field names to their doc values files
-    pub dv_files: HashMap<String, String>,
 }
 
 pub const SEGMENTS: &str = "segments";
@@ -104,11 +83,7 @@ pub fn read_segment_infos<D: Directory>(
     let _suffix = codec_utils::read_suffix(&mut input);
 
     // Read Lucene version
-    let version = Version {
-        major: input.read_vint(),
-        minor: input.read_vint(),
-        bugfix: input.read_vint(),
-    };
+    let version = read_version(&mut input);
 
     let index_created_version_major = input.read_vint();
     let sis_version = input.read_long();
@@ -117,11 +92,7 @@ pub fn read_segment_infos<D: Directory>(
 
     // Read minimum segment Lucene version if there are segments
     let min_segment_lucene_version = if num_segments > 0 {
-        Some(Version {
-            major: input.read_vint(),
-            minor: input.read_vint(),
-            bugfix: input.read_vint(),
-        })
+        Some(read_version(&mut input))
     } else {
         None
     };
@@ -129,39 +100,7 @@ pub fn read_segment_infos<D: Directory>(
     // Read each segment-commit-info
     let mut segments = Vec::with_capacity(num_segments as usize);
     for _ in 0..num_segments {
-        let segment_name = input.read_string();
-        let segment_id = codec_utils::read_id(&mut input);
-        let _codec = input.read_string();
-
-        let segment_info = segment_info::read(directory, &segment_name, &segment_id);
-        
-        let del_gen = input.read_long() as i64;
-        let del_count = input.read_int();
-        let field_infos_gen = input.read_long() as i64;
-        let dv_gen = input.read_long() as i64;
-        let soft_delete_count = input.read_int();
-        let field_infos_files = input.read_set();
-        
-        let num_dv_fields = input.read_int();
-        let mut dv_files = HashMap::new();
-        
-        // Read docvalues field names and their files
-        for _ in 0..num_dv_fields {
-            let field_name = input.read_string();
-            let file_name = input.read_string();
-            dv_files.insert(field_name, file_name);
-        }
-
-        segments.push(SegmentCommitInfo {
-            info: segment_info,
-            del_gen,
-            del_count,
-            field_infos_gen,
-            dv_gen,
-            soft_delete_count,
-            field_infos_files,
-            dv_files,
-        });
+        segments.push(segment_commit_info::read(&mut input, directory));
     }
 
     // Read user data
@@ -187,6 +126,14 @@ pub fn read_segment_infos<D: Directory>(
 pub fn read_latest_segment_infos<D: Directory>(directory: &D) -> SegmentInfos {
     let segments_file = get_last_segments_file_name(directory);
     read_segment_infos(directory, segments_file)
+}
+
+fn read_version<I: InputStream>(input: &mut I) -> Version {
+    Version {
+        major: input.read_vint(),
+        minor: input.read_vint(),
+        bugfix: input.read_vint(),
+    }
 }
 
 #[cfg(test)]
