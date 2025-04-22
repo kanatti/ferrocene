@@ -7,7 +7,7 @@ use crate::{
 };
 use radix_fmt::radix_36;
 
-use super::segment_commit_info;
+use super::{codec_utils::Id, segment_commit_info};
 
 /// Represents metadata about all segments in the index
 #[derive(Debug)]
@@ -27,7 +27,7 @@ pub struct SegmentInfos {
     /// User-defined metadata for the index
     pub user_data: HashMap<String, String>,
     /// Unique identifier for this segment infos
-    pub id: Vec<u8>,
+    pub id: Id,
     /// Minimum Lucene version across all segments in the index
     pub min_segment_lucene_version: Option<Version>,
 }

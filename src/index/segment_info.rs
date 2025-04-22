@@ -6,13 +6,15 @@ use crate::{
     version::Version,
 };
 
+use super::codec_utils::Id;
+
 /// Represents metadata about a segment in the index
 #[derive(Debug)]
 pub struct SegmentInfo {
     /// Name of the segment
     pub name: String,
     /// Unique identifier for the segment
-    pub id: Vec<u8>,
+    pub id: Id,
     /// Version of Lucene that created this segment
     pub version: Version,
     /// Minimum version of Lucene that can read this segment
@@ -35,7 +37,7 @@ pub const SEG_INFO_EXTENSION: &str = "si";
 
 // SegmentInfo (si) reading, based on Lucene70 codec
 // TODO: Make it codec specific.
-pub fn read<D: Directory>(directory: &D, segment_name: &str, segment_id: &Vec<u8>) -> SegmentInfo {
+pub fn read<D: Directory>(directory: &D, segment_name: &str, segment_id: &Id) -> SegmentInfo {
     let si_file = format!("{}.{}", segment_name, SEG_INFO_EXTENSION);
     let mut input = directory.open_file(&si_file).unwrap();
 
