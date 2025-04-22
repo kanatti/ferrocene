@@ -3,15 +3,8 @@ use std::collections::{HashMap, HashSet};
 use crate::{
     index::codec_utils,
     store::{Directory, InputStream},
+    version::Version,
 };
-
-/// Version information for a segment
-#[derive(Debug, Clone)]
-pub struct Version {
-    pub major: u32,
-    pub minor: u32,
-    pub bugfix: u32,
-}
 
 /// Represents metadata about a segment in the index
 #[derive(Debug)]

@@ -1,14 +1,57 @@
+use std::collections::{HashMap, HashSet};
+
 use crate::{
     index::{codec_utils, segment_info},
     store::{Directory, InputStream},
+    version::Version,
 };
 use radix_fmt::radix_36;
 
-#[derive(Debug)]
-pub struct SegmentInfos {}
+use super::segment_info::SegmentInfo;
 
+/// Represents metadata about all segments in the index
 #[derive(Debug)]
-pub struct SegmentCommitInfo {}
+pub struct SegmentInfos {
+    /// Generation number of the segments file
+    pub generation: u64,
+    /// Lucene version used to write this segments file
+    pub version: Version,
+    /// Major version of Lucene when the index was created
+    pub index_created_version_major: u32,
+    /// Segment infos version number
+    pub sis_version: u64,
+    /// Counter used to track segment creation
+    pub sis_counter: u64,
+    /// List of segment commit infos for all segments in the index
+    pub segments: Vec<SegmentCommitInfo>,
+    /// User-defined metadata for the index
+    pub user_data: HashMap<String, String>,
+    /// Unique identifier for this segment infos
+    pub id: Vec<u8>,
+    /// Minimum Lucene version across all segments in the index
+    pub min_segment_lucene_version: Option<Version>,
+}
+
+/// Represents metadata about a specific segment commit
+#[derive(Debug)]
+pub struct SegmentCommitInfo {
+    /// The segment info containing core segment metadata
+    pub info: SegmentInfo,
+    /// Deletion generation number for tracking deleted documents
+    pub del_gen: i64,
+    /// Number of deleted documents in this segment
+    pub del_count: u32,
+    /// Field infos generation number
+    pub field_infos_gen: i64,
+    /// Doc values generation number
+    pub dv_gen: i64,
+    /// Number of soft-deleted documents in this segment
+    pub soft_delete_count: u32,
+    /// Set of files containing field information
+    pub field_infos_files: HashSet<String>,
+    /// Map of field names to their doc values files
+    pub dv_files: HashMap<String, String>,
+}
 
 pub const SEGMENTS: &str = "segments";
 pub const MAX_RADIX: u32 = 36;
@@ -53,98 +96,92 @@ pub fn read_segment_infos<D: Directory>(
 
     let mut input = directory.open_file(segments_file).unwrap();
 
-    let magic = input.read_u32();
-    println!("magic - {}", magic);
-
-    let codec = input.read_string();
-    println!("codec - {}", codec);
-
-    let format = input.read_int();
-    println!("format - {}", format);
+    let _magic = input.read_u32();
+    let _codec = input.read_string();
+    let _format = input.read_int();
 
     let id = codec_utils::read_id(&mut input);
-    println!("id - {:?}", id);
+    let _suffix = codec_utils::read_suffix(&mut input);
 
-    // Suffix should be generation
-    let suffix = codec_utils::read_suffix(&mut input);
-    println!("suffix - {}, generation - {}", suffix, radix_36(generation));
-
-    let lucene_version = (input.read_vint(), input.read_vint(), input.read_vint());
-    println!("lucene_version - {:?}", lucene_version);
+    // Read Lucene version
+    let version = Version {
+        major: input.read_vint(),
+        minor: input.read_vint(),
+        bugfix: input.read_vint(),
+    };
 
     let index_created_version_major = input.read_vint();
-    println!(
-        "index_created_version_major - {}",
-        index_created_version_major
-    );
-
     let sis_version = input.read_long();
-    println!("sis_version - {}", sis_version);
-
     let sis_counter = input.read_vlong();
-    println!("sis_counter - {}", sis_counter);
-
     let num_segments = input.read_int();
-    println!("num_segments - {}", num_segments);
 
-    if num_segments > 0 {
-        let min_segment_lucene_version = (input.read_vint(), input.read_vint(), input.read_vint());
-        println!(
-            "min_segment_lucene_version - {:?}",
-            min_segment_lucene_version
-        );
-    }
+    // Read minimum segment Lucene version if there are segments
+    let min_segment_lucene_version = if num_segments > 0 {
+        Some(Version {
+            major: input.read_vint(),
+            minor: input.read_vint(),
+            bugfix: input.read_vint(),
+        })
+    } else {
+        None
+    };
 
     // Read each segment-commit-info
-    for _seg in 0..num_segments {
+    let mut segments = Vec::with_capacity(num_segments as usize);
+    for _ in 0..num_segments {
         let segment_name = input.read_string();
-        println!("segment_name - {}", segment_name);
-
         let segment_id = codec_utils::read_id(&mut input);
-        println!("segment_id - {:?}", segment_id);
-
-        let codec = input.read_string();
-        println!("codec - {}", codec);
+        let _codec = input.read_string();
 
         let segment_info = segment_info::read(directory, &segment_name, &segment_id);
-        println!("SegmentInfo - {:#?}", segment_info);
-
-        let del_gen = input.read_long();
-        println!("del_gen - {}", del_gen as i64);
-
+        
+        let del_gen = input.read_long() as i64;
         let del_count = input.read_int();
-        println!("del_count - {}", del_count);
-
-        let field_infos_gen = input.read_long();
-        println!("field_infos_gen - {}", field_infos_gen as i64);
-
-        let dv_gen = input.read_long();
-        println!("dv_gen - {}", dv_gen as i64);
-
+        let field_infos_gen = input.read_long() as i64;
+        let dv_gen = input.read_long() as i64;
         let soft_delete_count = input.read_int();
-        println!("soft_delete_count - {}", soft_delete_count);
-
         let field_infos_files = input.read_set();
-        println!("field_infos_files - {:?}", field_infos_files);
-
+        
         let num_dv_fields = input.read_int();
-        println!("num_dv_fields - {}", num_dv_fields);
+        let mut dv_files = HashMap::new();
+        
+        // Read docvalues field names and their files
+        for _ in 0..num_dv_fields {
+            let field_name = input.read_string();
+            let file_name = input.read_string();
+            dv_files.insert(field_name, file_name);
+        }
 
-        // TODO: Read dv file names if non-zero
+        segments.push(SegmentCommitInfo {
+            info: segment_info,
+            del_gen,
+            del_count,
+            field_infos_gen,
+            dv_gen,
+            soft_delete_count,
+            field_infos_files,
+            dv_files,
+        });
     }
 
     // Read user data
     let user_data = input.read_map();
-    println!("user_data - {:?}", user_data);
 
-    // Footer
-    let footer_magic = input.read_int();
-    println!("footer_magic - {}", footer_magic as i32);
+    // Read footer
+    let _footer_magic = input.read_int();
+    let _algorithm_id = input.read_int();
 
-    let algorithm_id = input.read_int();
-    println!("algorithm_id - {}", algorithm_id);
-
-    SegmentInfos {}
+    SegmentInfos {
+        generation,
+        version,
+        index_created_version_major,
+        sis_version,
+        sis_counter,
+        segments,
+        user_data,
+        id,
+        min_segment_lucene_version,
+    }
 }
 
 pub fn read_latest_segment_infos<D: Directory>(directory: &D) -> SegmentInfos {
