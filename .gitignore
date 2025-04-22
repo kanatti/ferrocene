@@ -5,3 +5,4 @@ crates/*/target
 *.iml
 .DS_Store
 /test-data/
+.vscode/settings.json
