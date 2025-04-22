@@ -1,21 +1,18 @@
-use crate::store::{Directory, InputStream};
+use crate::{
+    index::{codec_utils, segment_info},
+    store::{Directory, InputStream},
+};
 use radix_fmt::radix_36;
 
 #[derive(Debug)]
 pub struct SegmentInfos {}
 
 #[derive(Debug)]
-pub struct SegmentInfo {}
-
-#[derive(Debug)]
 pub struct SegmentCommitInfo {}
 
 pub const SEGMENTS: &str = "segments";
 pub const MAX_RADIX: u32 = 36;
-pub const CODEC_MAGIC: u32 = 0x3fd76c17;
-pub const ID_LENGTH: u32 = 16;
 
-pub const SEG_INFO_EXTENSION: &str = "si";
 pub const SEG_INFO_CODEC: &str = "Lucene70SegmentInfo";
 
 pub fn get_last_segments_file_name<D: Directory>(directory: &D) -> String {
@@ -65,11 +62,11 @@ pub fn read_segment_infos<D: Directory>(
     let format = input.read_int();
     println!("format - {}", format);
 
-    let id = input.read_bytes(ID_LENGTH as usize);
+    let id = codec_utils::read_id(&mut input);
     println!("id - {:?}", id);
 
     // Suffix should be generation
-    let suffix = read_suffix(&mut input);
+    let suffix = codec_utils::read_suffix(&mut input);
     println!("suffix - {}, generation - {}", suffix, radix_36(generation));
 
     let lucene_version = (input.read_vint(), input.read_vint(), input.read_vint());
@@ -99,20 +96,18 @@ pub fn read_segment_infos<D: Directory>(
     }
 
     // Read each segment-commit-info
-    for seg in 0..num_segments {
+    for _seg in 0..num_segments {
         let segment_name = input.read_string();
         println!("segment_name - {}", segment_name);
 
-        let segment_id = input.read_bytes(ID_LENGTH as usize);
+        let segment_id = codec_utils::read_id(&mut input);
         println!("segment_id - {:?}", segment_id);
 
         let codec = input.read_string();
         println!("codec - {}", codec);
 
-        // SegmentInfo (si) reading, based on Lucene70 codec
-        // TODO: Make it codec specific.
-        let segment_info = read_segment_info(directory, &segment_name, &segment_id);
-        println!("SegmentInfo - {:?}", segment_info);
+        let segment_info = segment_info::read(directory, &segment_name, &segment_id);
+        println!("SegmentInfo - {:#?}", segment_info);
 
         let del_gen = input.read_long();
         println!("del_gen - {}", del_gen as i64);
@@ -156,73 +151,6 @@ pub fn read_latest_segment_infos<D: Directory>(directory: &D) -> SegmentInfos {
     let segments_file = get_last_segments_file_name(directory);
     read_segment_infos(directory, segments_file)
 }
-
-pub fn read_segment_info<D: Directory>(directory: &D, segment_name: &str, segment_id: &Vec<u8>) -> SegmentInfo {
-    println!("\n--- Segment Info --- {}", segment_name);
-
-    let si_file = format!("{}.{}", segment_name, SEG_INFO_EXTENSION);
-    let mut input = directory.open_file(&si_file).unwrap();
-
-    check_header(&mut input);
-
-    let version = (input.read_int(), input.read_int(), input.read_int());
-    println!("version - {:?}", version);
-
-    let has_min_version = input.read_byte();
-    println!("has_min_version - {:?}", has_min_version);
-
-    // TODO conditional on has_min_version
-    let min_version = (input.read_int(), input.read_int(), input.read_int());
-    println!("min_version - {:?}", min_version);
-
-    let doc_count = input.read_int();
-    println!("doc-count : {}", doc_count);
-
-    let is_compound = input.read_byte();
-    println!("is_compound - {}", is_compound);
-
-    let diagnostics = input.read_map();
-    let files = input.read_set();
-    let attributes = input.read_map();
-
-    println!("diagnostics - {:?}", diagnostics);
-    println!("files - {:?}", files);
-    println!("attributes - {:?}", attributes);
-    
-
-    println!("--- Segment Info ---\n");
-    SegmentInfo{}
-}
-
-pub fn check_header<I: InputStream>(input: &mut I) {
-    let magic = input.read_u32();
-    assert!(magic == CODEC_MAGIC, "Magic not matching");
-    // Check header to get version
-    let codec = input.read_string();
-    println!("codec - {}", codec);
-    
-    let version = input.read_int();
-    println!("version - {}", version);
-    // Check header ID
-    let segment_id = input.read_bytes(ID_LENGTH as usize);
-    println!("segment_id - {:?}", segment_id);
-
-    // Check header suffix
-    let suffix = read_suffix(input);
-    println!("suffix - {:?}", suffix);
-}
-
-pub fn read_suffix<I: InputStream>(input: &mut I) -> String {
-    let suffix_length = input.read_byte();
-    println!("suffix_length - {}", suffix_length);
-
-    let suffix_bytes = input.read_bytes(suffix_length as usize);
-    println!("suffix_bytes - {:?}", suffix_bytes);
-
-    return String::from_utf8(suffix_bytes).unwrap();
-}
-
-pub fn check_footer() {}
 
 #[cfg(test)]
 mod tests {
